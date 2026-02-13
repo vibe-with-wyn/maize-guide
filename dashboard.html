@@ -272,9 +272,65 @@
       .dashboard-grid { grid-template-columns: 1fr; }
     }
 
+    @media (max-width: 768px) {
+      .stage-progress {
+        flex-wrap: wrap;
+      }
+      .stage-bar {
+        min-width: calc(20% - 0.25rem);
+        font-size: 0.55rem;
+        height: 2rem;
+      }
+      .dashboard-card {
+        padding: 1.25rem;
+      }
+      .dashboard-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+      .task-meta {
+        flex-wrap: wrap;
+      }
+    }
+
     @media (max-width: 640px) {
       .stats-grid { grid-template-columns: 1fr; }
       .dashboard-main { padding: 1.25rem; }
+      .dashboard-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .dashboard-header .btn {
+        text-align: center;
+      }
+      .stage-progress {
+        gap: 0.2rem;
+      }
+      .stage-bar {
+        min-width: calc(20% - 0.2rem);
+        font-size: 0.5rem;
+        height: 1.75rem;
+        letter-spacing: 0;
+      }
+      .chart-container {
+        height: 180px;
+      }
+      .risk-gauge .risk-value {
+        font-size: 1.5rem;
+      }
+      .weather-item {
+        padding: 0.5rem 0;
+      }
+      .notification-item {
+        padding: 0.625rem;
+      }
+      .notification-text {
+        font-size: 0.8rem;
+      }
+      .stat-card {
+        padding: 1rem;
+      }
     }
   </style>
 </head>

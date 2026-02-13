@@ -1374,6 +1374,20 @@ p {
   }
 }
 
+@media (max-width: 640px) {
+  .dashboard-main {
+    padding: 1rem;
+  }
+
+  .dashboard-header h2 {
+    font-size: 1.35rem;
+  }
+
+  .dashboard-header p {
+    font-size: 0.85rem;
+  }
+}
+
 /* ============================================
    Pricing 
    ============================================ */
