@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crop Planner — MaizeGuide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .planner-container {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 1.5rem;
+      min-height: calc(100vh - 4.5rem - 4rem);
+    }
+
+    .planner-sidebar {
+      background: var(--white);
+      border: 1px solid var(--gray-light);
+      border-radius: var(--radius-xl);
+      padding: 1.5rem;
+      height: fit-content;
+      position: sticky;
+      top: 6.5rem;
+    }
+
+    .planner-sidebar h3 {
+      font-size: 1.15rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .planner-sidebar > p {
+      font-size: 0.85rem;
+      color: var(--gray);
+      margin-bottom: 1.5rem;
+    }
+
+    .planner-main {
+      min-width: 0;
+    }
+
+    /* Steps indicator */
+    .form-steps {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .form-step {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--gray);
+    }
+
+    .form-step.active { color: var(--primary); }
+    .form-step.completed { color: var(--primary); }
+
+    .form-step-number {
+      width: 1.75rem;
+      height: 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border: 2px solid var(--gray-light);
+      background: var(--white);
+    }
+
+    .form-step.active .form-step-number {
+      background: var(--primary);
+      color: var(--white);
+      border-color: var(--primary);
+    }
+
+    .form-step.completed .form-step-number {
+      background: var(--primary);
+      color: var(--white);
+      border-color: var(--primary);
+    }
+
+    .form-step-line {
+      flex: 1;
+      height: 2px;
+      background: var(--gray-light);
+      min-width: 1.5rem;
+    }
+
+    .form-step-line.active { background: var(--primary); }
+
+    /* Resource tag selector */
+    .resource-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .resource-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.5rem 0.875rem;
+      border: 1.5px solid var(--gray-light);
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--dark-600);
+      cursor: pointer;
+      transition: var(--transition);
+      background: var(--white);
+    }
+
+    .resource-tag:hover {
+      border-color: var(--primary-200);
+      background: var(--primary-50);
+    }
+
+    .resource-tag.selected {
+      border-color: var(--primary);
+      background: var(--primary-100);
+      color: var(--primary-dark);
+    }
+
+    .resource-tag i {
+      font-size: 0.9rem;
+    }
+
+    /* Generated plan preview */
+    .plan-preview {
+      background: var(--white);
+      border: 1px solid var(--gray-light);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+    }
+
+    .plan-header {
+      background: linear-gradient(135deg, var(--primary) 0%, #065f46 100%);
+      padding: 2rem;
+      color: var(--white);
+    }
+
+    .plan-header h3 {
+      color: var(--white);
+      margin-bottom: 0.5rem;
+    }
+
+    .plan-header p {
+      color: rgba(255,255,255,0.8);
+      font-size: 0.9rem;
+    }
+
+    .plan-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .plan-meta-item {
+      text-align: center;
+    }
+
+    .plan-meta-item .value {
+      font-size: 1.25rem;
+      font-weight: 800;
+    }
+
+    .plan-meta-item .label {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .plan-body {
+      padding: 2rem;
+    }
+
+    /* Stage tabs */
+    .stage-tabs {
+      display: flex;
+      gap: 0.25rem;
+      background: var(--gray-100);
+      border-radius: var(--radius-lg);
+      padding: 0.25rem;
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+    }
+
+    .stage-tab {
+      padding: 0.625rem 1rem;
+      border-radius: var(--radius);
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--dark-600);
+      cursor: pointer;
+      transition: var(--transition);
+      white-space: nowrap;
+      border: none;
+      background: transparent;
+      font-family: var(--font-sans);
+    }
+
+    .stage-tab:hover {
+      color: var(--dark);
+      background: var(--white);
+    }
+
+    .stage-tab.active {
+      background: var(--white);
+      color: var(--primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Stage content */
+    .stage-info {
+      display: flex;
+      align-items: flex-start;
+      gap: 1.25rem;
+      padding: 1.25rem;
+      background: var(--primary-50);
+      border-radius: var(--radius-lg);
+      margin-bottom: 1.5rem;
+    }
+
+    .stage-info-icon {
+      width: 3rem;
+      height: 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--primary);
+      color: var(--white);
+      border-radius: var(--radius);
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .stage-info h4 {
+      font-size: 1rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .stage-info p {
+      font-size: 0.85rem;
+      margin: 0;
+    }
+
+    /* Task timeline in planner */
+    .planner-timeline {
+      position: relative;
+      padding-left: 2rem;
+    }
+
+    .planner-timeline::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0.6rem;
+      width: 2px;
+      background: var(--gray-light);
+    }
+
+    .planner-task {
+      position: relative;
+      padding-bottom: 1.25rem;
+    }
+
+    .planner-task::before {
+      content: '';
+      position: absolute;
+      left: -1.525rem;
+      top: 0.5rem;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--primary-200);
+      border: 2px solid var(--white);
+    }
+
+    .planner-task-card {
+      background: var(--white);
+      border: 1px solid var(--gray-light);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.25rem;
+      transition: var(--transition);
+    }
+
+    .planner-task-card:hover {
+      border-color: var(--primary-200);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .planner-task-day {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--primary);
+      margin-bottom: 0.375rem;
+    }
+
+    .planner-task-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--dark);
+      margin-bottom: 0.25rem;
+    }
+
+    .planner-task-desc {
+      font-size: 0.8rem;
+      color: var(--gray);
+    }
+
+    .planner-task-tags {
+      display: flex;
+      gap: 0.375rem;
+      margin-top: 0.5rem;
+    }
+
+    .planner-task-tag {
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      background: var(--gray-100);
+      color: var(--dark-500);
+    }
+
+    @media (max-width: 1024px) {
+      .planner-container { grid-template-columns: 1fr; }
+      .planner-sidebar { position: static; }
+      .plan-meta-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 640px) {
+      .plan-meta-grid { grid-template-columns: 1fr; }
+      .planner-sidebar { padding: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Dashboard Navigation -->
+  <nav class="navbar" id="navbar">
+    <div class="navbar-inner">
+      <div style="display:flex;align-items:center;gap:1rem;">
+        <button class="navbar-toggle" id="sidebarToggle" style="display:flex;" aria-label="Toggle sidebar">
+          <span></span><span></span><span></span>
+        </button>
+        <a href="index.html" class="navbar-brand">
+          <i class="fas fa-seedling"></i>
+          Maize<span>Guide</span>
+        </a>
+      </div>
+      <div style="display:flex;align-items:center;gap:1.25rem;">
+        <button class="btn btn-icon btn-ghost" style="position:relative;">
+          <i class="fas fa-bell" style="font-size:1rem;color:var(--dark-500);"></i>
+          <span style="position:absolute;top:4px;right:4px;width:8px;height:8px;background:var(--danger);border-radius:50%;border:2px solid var(--white);"></span>
+        </button>
+        <div style="width:2.25rem;height:2.25rem;border-radius:50%;background:var(--primary);color:var(--white);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;cursor:pointer;">JR</div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Main</div>
+        <a href="dashboard.html" class="sidebar-link">
+          <i class="fas fa-grid-2"></i> Dashboard
+        </a>
+        <a href="crop-planner.html" class="sidebar-link active">
+          <i class="fas fa-calendar-days"></i> Crop Planner
+          <span class="sidebar-badge">3</span>
+        </a>
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-list-check"></i> My Tasks
+        </a>
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-chart-line"></i> Yield Analytics
+        </a>
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-shield-halved"></i> Risk Assessment
+        </a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Farm</div>
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-map-location-dot"></i> My Farms
+        </a>
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-cloud-sun"></i> Weather
+        </a>
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-leaf"></i> Crop Library
+        </a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Account</div>
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-gear"></i> Settings
+        </a>
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-file-export"></i> Reports
+        </a>
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-circle-question"></i> Help Center
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+      <div class="dashboard-header">
+        <div>
+          <h2><i class="fas fa-calendar-days text-primary" style="margin-right:0.5rem;"></i>Crop Planner</h2>
+          <p>Create a new corn crop cycle plan or view your generated timeline</p>
+        </div>
+      </div>
+
+      <div class="planner-container">
+        <!-- Left: Input Form -->
+        <div class="planner-sidebar">
+          <h3>New Crop Plan</h3>
+          <p>Enter your farm information to generate a tailored crop cycle plan.</p>
+
+          <!-- Steps Indicator -->
+          <div class="form-steps">
+            <div class="form-step active">
+              <div class="form-step-number">1</div>
+              <span>Farm Info</span>
+            </div>
+            <div class="form-step-line active"></div>
+            <div class="form-step">
+              <div class="form-step-number">2</div>
+              <span>Resources</span>
+            </div>
+            <div class="form-step-line"></div>
+            <div class="form-step">
+              <div class="form-step-number">3</div>
+              <span>Generate</span>
+            </div>
+          </div>
+
+          <form id="plannerForm" onsubmit="return generatePlan(event)">
+            <!-- Step 1: Farm Information -->
+            <div id="step1">
+              <div class="form-group">
+                <label class="form-label" for="farmName">Farm / Plan Name</label>
+                <input type="text" id="farmName" class="form-input" placeholder="e.g., Field Block A — Wet Season 2026" value="Farm Block A — Wet Season 2026">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="location">Location / Province</label>
+                <div class="form-input-icon">
+                  <i class="fas fa-map-marker-alt"></i>
+                  <input type="text" id="location" class="form-input" placeholder="e.g., Isabela, Cagayan Valley" value="Isabela, Cagayan Valley">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="plantingMonth">Planting Month</label>
+                <select id="plantingMonth" class="form-select">
+                  <option value="">Select planting month</option>
+                  <option value="jan">January</option>
+                  <option value="feb" selected>February</option>
+                  <option value="mar">March</option>
+                  <option value="apr">April</option>
+                  <option value="may">May</option>
+                  <option value="jun">June</option>
+                  <option value="jul">July</option>
+                  <option value="aug">August</option>
+                  <option value="sep">September</option>
+                  <option value="oct">October</option>
+                  <option value="nov">November</option>
+                  <option value="dec">December</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="soilType">Soil Type</label>
+                <select id="soilType" class="form-select">
+                  <option value="">Select soil type</option>
+                  <option value="clay">Clay</option>
+                  <option value="clay-loam" selected>Clay Loam</option>
+                  <option value="sandy-loam">Sandy Loam</option>
+                  <option value="loam">Loam</option>
+                  <option value="silt-loam">Silt Loam</option>
+                  <option value="sandy">Sandy</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="waterSource">Water Source</label>
+                <select id="waterSource" class="form-select">
+                  <option value="">Select water source</option>
+                  <option value="irrigated" selected>Irrigated (Canal/Pump)</option>
+                  <option value="rainfed">Rainfed Only</option>
+                  <option value="mixed">Mixed (Irrigation + Rain)</option>
+                  <option value="drip">Drip Irrigation</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="farmSize">Farm Size (hectares)</label>
+                <input type="number" id="farmSize" class="form-input" placeholder="e.g., 2.5" step="0.1" value="2.5">
+              </div>
+
+              <button type="button" class="btn btn-primary btn-full" onclick="nextStep(2)">
+                Continue <i class="fas fa-arrow-right"></i>
+              </button>
+            </div>
+
+            <!-- Step 2: Resources -->
+            <div id="step2" style="display:none;">
+              <div class="form-group">
+                <label class="form-label">Available Resources</label>
+                <p class="form-helper mb-2" style="margin-top:0;">Select all resources you have access to</p>
+                <div class="resource-tags">
+                  <div class="resource-tag selected" onclick="this.classList.toggle('selected')">
+                    <i class="fas fa-flask"></i> Fertilizer (NPK)
+                  </div>
+                  <div class="resource-tag selected" onclick="this.classList.toggle('selected')">
+                    <i class="fas fa-flask"></i> Urea
+                  </div>
+                  <div class="resource-tag selected" onclick="this.classList.toggle('selected')">
+                    <i class="fas fa-spray-can"></i> Pesticides
+                  </div>
+                  <div class="resource-tag" onclick="this.classList.toggle('selected')">
+                    <i class="fas fa-spray-can"></i> Herbicides
+                  </div>
+                  <div class="resource-tag selected" onclick="this.classList.toggle('selected')">
+                    <i class="fas fa-tractor"></i> Tractor
+                  </div>
+                  <div class="resource-tag" onclick="this.classList.toggle('selected')">
+                    <i class="fas fa-water"></i> Sprinkler System
+                  </div>
+                  <div class="resource-tag selected" onclick="this.classList.toggle('selected')">
+                    <i class="fas fa-people-group"></i> Manual Labor
+                  </div>
+                  <div class="resource-tag" onclick="this.classList.toggle('selected')">
+                    <i class="fas fa-boxes-stacked"></i> Storage Facility
+                  </div>
+                  <div class="resource-tag" onclick="this.classList.toggle('selected')">
+                    <i class="fas fa-vial"></i> Soil Testing Kit
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="cornVariety">Corn Variety</label>
+                <select id="cornVariety" class="form-select">
+                  <option value="yellow-hybrid" selected>Yellow Hybrid Corn</option>
+                  <option value="white-hybrid">White Hybrid Corn</option>
+                  <option value="glutinous">Glutinous Corn</option>
+                  <option value="sweet">Sweet Corn</option>
+                  <option value="opv">Open-Pollinated Variety (OPV)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="prevCrop">Previous Crop on This Field</label>
+                <select id="prevCrop" class="form-select">
+                  <option value="rice">Rice</option>
+                  <option value="corn">Corn</option>
+                  <option value="vegetables">Vegetables</option>
+                  <option value="fallow" selected>Fallow / No crop</option>
+                  <option value="legumes">Legumes</option>
+                </select>
+              </div>
+
+              <div style="display:flex;gap:0.75rem;margin-top:1rem;">
+                <button type="button" class="btn btn-secondary btn-full" onclick="nextStep(1)">
+                  <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <button type="submit" class="btn btn-primary btn-full">
+                  <i class="fas fa-wand-magic-sparkles"></i> Generate Plan
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Right: Generated Plan Preview -->
+        <div class="planner-main">
+          <div class="plan-preview" id="planPreview">
+            <div class="plan-header">
+              <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+                <div>
+                  <h3><i class="fas fa-seedling" style="margin-right:0.5rem;"></i>Farm Block A — Wet Season 2026</h3>
+                  <p>Isabela, Cagayan Valley · Clay Loam · Irrigated · Yellow Hybrid Corn</p>
+                </div>
+                <div style="display:flex;gap:0.5rem;">
+                  <button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:var(--white);border-color:rgba(255,255,255,0.3);">
+                    <i class="fas fa-download"></i> Export PDF
+                  </button>
+                  <button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:var(--white);border-color:rgba(255,255,255,0.3);">
+                    <i class="fas fa-share-nodes"></i> Share
+                  </button>
+                </div>
+              </div>
+              <div class="plan-meta-grid">
+                <div class="plan-meta-item">
+                  <div class="value">120</div>
+                  <div class="label">Total Days</div>
+                </div>
+                <div class="plan-meta-item">
+                  <div class="value">86</div>
+                  <div class="label">Total Tasks</div>
+                </div>
+                <div class="plan-meta-item">
+                  <div class="value">4.8 t/ha</div>
+                  <div class="label">Est. Yield</div>
+                </div>
+                <div class="plan-meta-item">
+                  <div class="value">Low</div>
+                  <div class="label">Risk Level</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="plan-body">
+              <!-- Stage Tabs -->
+              <div class="stage-tabs">
+                <button class="stage-tab active" onclick="switchStage(this, 'germination')">
+                  <i class="fas fa-seedling"></i> Germination
+                </button>
+                <button class="stage-tab" onclick="switchStage(this, 'emergence')">
+                  <i class="fas fa-leaf"></i> Emergence
+                </button>
+                <button class="stage-tab" onclick="switchStage(this, 'vegetative')">
+                  <i class="fas fa-tree"></i> Vegetative
+                </button>
+                <button class="stage-tab" onclick="switchStage(this, 'tasseling')">
+                  <i class="fas fa-wheat-awn"></i> Tasseling
+                </button>
+                <button class="stage-tab" onclick="switchStage(this, 'silking')">
+                  <i class="fas fa-spa"></i> Silking
+                </button>
+                <button class="stage-tab" onclick="switchStage(this, 'grainfill')">
+                  <i class="fas fa-circle-dot"></i> Grain Fill
+                </button>
+                <button class="stage-tab" onclick="switchStage(this, 'maturity')">
+                  <i class="fas fa-check-circle"></i> Maturity
+                </button>
+              </div>
+
+              <!-- Stage Info -->
+              <div class="stage-info">
+                <div class="stage-info-icon">
+                  <i class="fas fa-seedling"></i>
+                </div>
+                <div>
+                  <h4>Germination Stage (Day 1–7)</h4>
+                  <p>
+                    The seed absorbs water and begins root and shoot development. Critical to ensure adequate soil 
+                    moisture and proper planting depth (5-8 cm). Soil temperature should be above 18°C for optimal germination.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Task Timeline -->
+              <h4 style="margin-bottom:1rem;"><i class="fas fa-list-check text-primary" style="margin-right:0.375rem;"></i>Tasks for This Stage</h4>
+              
+              <div class="planner-timeline">
+                <div class="planner-task">
+                  <div class="planner-task-card">
+                    <div class="planner-task-day">Day 1 · Planting Day</div>
+                    <div class="planner-task-title">Land preparation — final harrowing and leveling</div>
+                    <div class="planner-task-desc">Ensure field is well-prepared with fine tilth for uniform germination. Remove debris and old crop residue.</div>
+                    <div class="planner-task-tags">
+                      <span class="planner-task-tag" style="background:#dcfce7;color:#15803d;">Land Prep</span>
+                      <span class="planner-task-tag" style="background:#fee2e2;color:#dc2626;">High Priority</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="planner-task">
+                  <div class="planner-task-card">
+                    <div class="planner-task-day">Day 1 · Planting Day</div>
+                    <div class="planner-task-title">Apply basal fertilizer (14-14-14 NPK) at 200 kg/ha</div>
+                    <div class="planner-task-desc">Incorporate fertilizer 5 cm below and beside the seed furrow. Avoid direct seed-fertilizer contact.</div>
+                    <div class="planner-task-tags">
+                      <span class="planner-task-tag" style="background:#fef3c7;color:#b45309;">Fertilization</span>
+                      <span class="planner-task-tag" style="background:#fee2e2;color:#dc2626;">High Priority</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="planner-task">
+                  <div class="planner-task-card">
+                    <div class="planner-task-day">Day 1 · Planting Day</div>
+                    <div class="planner-task-title">Sow corn seeds at 75cm × 25cm spacing</div>
+                    <div class="planner-task-desc">Plant 1–2 seeds per hill at 5-8cm depth. Target 53,000 plants per hectare for optimal density.</div>
+                    <div class="planner-task-tags">
+                      <span class="planner-task-tag" style="background:#dcfce7;color:#15803d;">Planting</span>
+                      <span class="planner-task-tag" style="background:#fee2e2;color:#dc2626;">High Priority</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="planner-task">
+                  <div class="planner-task-card">
+                    <div class="planner-task-day">Day 2</div>
+                    <div class="planner-task-title">Apply pre-emergence herbicide</div>
+                    <div class="planner-task-desc">Apply atrazine-based herbicide within 2 days after planting for effective weed suppression during germination.</div>
+                    <div class="planner-task-tags">
+                      <span class="planner-task-tag" style="background:#dbeafe;color:#1d4ed8;">Weed Mgmt</span>
+                      <span class="planner-task-tag" style="background:#fef3c7;color:#b45309;">Medium</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="planner-task">
+                  <div class="planner-task-card">
+                    <div class="planner-task-day">Day 3</div>
+                    <div class="planner-task-title">Initial irrigation — ensure adequate soil moisture</div>
+                    <div class="planner-task-desc">Apply 25-30mm of water if no rainfall. Soil moisture should be at 60-70% field capacity for germination.</div>
+                    <div class="planner-task-tags">
+                      <span class="planner-task-tag" style="background:#dbeafe;color:#1d4ed8;">Irrigation</span>
+                      <span class="planner-task-tag" style="background:#fef3c7;color:#b45309;">Medium</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="planner-task">
+                  <div class="planner-task-card">
+                    <div class="planner-task-day">Day 5</div>
+                    <div class="planner-task-title">Monitor for seed rot and bird damage</div>
+                    <div class="planner-task-desc">Check random spots for germination progress. Look for signs of seed rot, ant damage, or bird feeding.</div>
+                    <div class="planner-task-tags">
+                      <span class="planner-task-tag" style="background:#fae8ff;color:#9333ea;">Monitoring</span>
+                      <span class="planner-task-tag" style="background:#dcfce7;color:#15803d;">Low</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="planner-task">
+                  <div class="planner-task-card">
+                    <div class="planner-task-day">Day 7</div>
+                    <div class="planner-task-title">Assess germination rate and plan replanting</div>
+                    <div class="planner-task-desc">Count emerged seedlings per row. If germination is below 85%, prepare for replanting in gaps within 3 days.</div>
+                    <div class="planner-task-tags">
+                      <span class="planner-task-tag" style="background:#fae8ff;color:#9333ea;">Assessment</span>
+                      <span class="planner-task-tag" style="background:#fee2e2;color:#dc2626;">High Priority</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ML Insights Box -->
+              <div style="margin-top:2rem;padding:1.5rem;background:linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);border:1px solid var(--primary-200);border-radius:var(--radius-xl);">
+                <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;">
+                  <div style="width:2.5rem;height:2.5rem;background:var(--primary);color:var(--white);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-brain"></i>
+                  </div>
+                  <div>
+                    <h4 style="font-size:1rem;margin-bottom:0;">ML-Powered Insights</h4>
+                    <p style="font-size:0.8rem;color:var(--gray);margin:0;">Based on your farm inputs and historical data</p>
+                  </div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:1.25rem;">
+                  <div>
+                    <div style="font-size:0.75rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.25rem;">Yield Estimate</div>
+                    <div style="font-size:1.5rem;font-weight:800;color:var(--primary);">4.8 t/ha</div>
+                    <div style="font-size:0.75rem;color:var(--gray);">Confidence: 87%</div>
+                  </div>
+                  <div>
+                    <div style="font-size:0.75rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.25rem;">Risk Level</div>
+                    <div style="font-size:1.5rem;font-weight:800;color:var(--primary);">Low</div>
+                    <div style="font-size:0.75rem;color:var(--gray);">Score: 0.23 / 1.0</div>
+                  </div>
+                  <div>
+                    <div style="font-size:0.75rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.25rem;">Key Factor</div>
+                    <div style="font-size:1.5rem;font-weight:800;color:var(--secondary);">Soil</div>
+                    <div style="font-size:0.75rem;color:var(--gray);">Clay Loam optimal ✓</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/main.js"></script>
+  <script>
+    // Step navigation
+    function nextStep(step) {
+      document.getElementById('step1').style.display = step === 1 ? 'block' : 'none';
+      document.getElementById('step2').style.display = step === 2 ? 'block' : 'none';
+
+      const steps = document.querySelectorAll('.form-step');
+      const lines = document.querySelectorAll('.form-step-line');
+      
+      steps.forEach((s, i) => {
+        s.classList.remove('active', 'completed');
+        if (i < step - 1) s.classList.add('completed');
+        if (i === step - 1) s.classList.add('active');
+      });
+
+      lines.forEach((l, i) => {
+        l.classList.toggle('active', i < step - 1);
+      });
+    }
+
+    function generatePlan(e) {
+      e.preventDefault();
+      // In real app, this would call backend API
+      // For demo, the plan is already shown
+      const steps = document.querySelectorAll('.form-step');
+      const lines = document.querySelectorAll('.form-step-line');
+      steps.forEach(s => s.classList.add('completed'));
+      lines.forEach(l => l.classList.add('active'));
+      
+      document.getElementById('planPreview').scrollIntoView({ behavior: 'smooth' });
+      return false;
+    }
+
+    function switchStage(btn, stage) {
+      document.querySelectorAll('.stage-tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    // Sidebar toggle
+    document.getElementById('sidebarToggle').addEventListener('click', function() {
+      document.getElementById('sidebar').classList.toggle('open');
+    });
+  </script>
+</body>
+</html>
