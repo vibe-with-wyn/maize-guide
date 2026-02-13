@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — MaizeGuide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .dashboard-card {
+      background: var(--white);
+      border: 1px solid var(--gray-light);
+      border-radius: var(--radius-xl);
+      padding: 1.5rem;
+    }
+
+    .dashboard-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+
+    .dashboard-card-header h4 {
+      font-size: 1rem;
+    }
+
+    /* Task list in dashboard */
+    .task-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.875rem;
+      border: 1px solid var(--gray-light);
+      border-radius: var(--radius-lg);
+      margin-bottom: 0.625rem;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .task-item:hover {
+      border-color: var(--primary-200);
+      background: var(--primary-50);
+    }
+
+    .task-checkbox {
+      width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 50%;
+      border: 2px solid var(--gray-light);
+      flex-shrink: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.125rem;
+      transition: var(--transition);
+    }
+
+    .task-checkbox.checked {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: var(--white);
+      font-size: 0.6rem;
+    }
+
+    .task-item.completed .task-title {
+      text-decoration: line-through;
+      color: var(--gray);
+    }
+
+    .task-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--dark);
+      margin-bottom: 0.125rem;
+    }
+
+    .task-meta {
+      font-size: 0.75rem;
+      color: var(--gray);
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+    }
+
+    .task-priority {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+    }
+
+    .task-priority.high { background: #fee2e2; color: #dc2626; }
+    .task-priority.medium { background: #fef3c7; color: #b45309; }
+    .task-priority.low { background: #dcfce7; color: #15803d; }
+
+    /* Growth stages */
+    .stage-progress {
+      display: flex;
+      gap: 0.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stage-bar {
+      flex: 1;
+      height: 2.5rem;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--white);
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+    }
+
+    .stage-bar:hover {
+      transform: scaleY(1.15);
+    }
+
+    .stage-bar.active {
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.3);
+    }
+
+    .stage-bar.completed { background: var(--primary); }
+    .stage-bar.current { background: var(--secondary); }
+    .stage-bar.upcoming { background: var(--gray-light); color: var(--gray); }
+
+    /* Risk gauge */
+    .risk-gauge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .risk-meter {
+      width: 160px;
+      height: 80px;
+      position: relative;
+      margin-bottom: 1rem;
+    }
+
+    .risk-value {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 0.25rem;
+    }
+
+    .risk-label {
+      font-size: 0.85rem;
+      color: var(--gray);
+    }
+
+    /* Weather mini */
+    .weather-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--gray-light);
+    }
+
+    .weather-item:last-child {
+      border-bottom: none;
+    }
+
+    .weather-day {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--dark);
+    }
+
+    .weather-temp {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    .weather-icon {
+      font-size: 1.25rem;
+    }
+
+    /* Notification */
+    .notification-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.875rem;
+      border-radius: var(--radius-lg);
+      margin-bottom: 0.5rem;
+      transition: var(--transition);
+    }
+
+    .notification-item:hover {
+      background: var(--gray-50);
+    }
+
+    .notification-dot {
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 0.375rem;
+    }
+
+    .notification-dot.green { background: var(--primary); }
+    .notification-dot.amber { background: var(--secondary); }
+    .notification-dot.red { background: var(--danger); }
+    .notification-dot.blue { background: var(--accent); }
+
+    .notification-text {
+      font-size: 0.85rem;
+      color: var(--dark-600);
+      line-height: 1.5;
+    }
+
+    .notification-time {
+      font-size: 0.7rem;
+      color: var(--gray);
+      margin-top: 0.25rem;
+    }
+
+    /* Chart container */
+    .chart-container {
+      position: relative;
+      height: 220px;
+    }
+
+    /* User dropdown in nav */
+    .user-avatar {
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 50%;
+      background: var(--primary);
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    @media (max-width: 1024px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .dashboard-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      .stats-grid { grid-template-columns: 1fr; }
+      .dashboard-main { padding: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Dashboard Navigation -->
+  <nav class="navbar" id="navbar">
+    <div class="navbar-inner">
+      <div style="display:flex;align-items:center;gap:1rem;">
+        <button class="navbar-toggle" id="sidebarToggle" style="display:flex;" aria-label="Toggle sidebar">
+          <span></span><span></span><span></span>
+        </button>
+        <a href="index.html" class="navbar-brand">
+          <i class="fas fa-seedling"></i>
+          Maize<span>Guide</span>
+        </a>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:1.25rem;">
+        <div style="position:relative;">
+          <input type="text" class="form-input" placeholder="Search tasks, plans..." style="width:min(280px, 40vw);padding-left:2.5rem;height:2.5rem;font-size:0.85rem;border-radius:9999px;">
+          <i class="fas fa-search" style="position:absolute;left:0.875rem;top:50%;transform:translateY(-50%);color:var(--gray);font-size:0.85rem;"></i>
+        </div>
+        <button class="btn btn-icon btn-ghost" style="position:relative;">
+          <i class="fas fa-bell" style="font-size:1rem;color:var(--dark-500);"></i>
+          <span style="position:absolute;top:4px;right:4px;width:8px;height:8px;background:var(--danger);border-radius:50%;border:2px solid var(--white);"></span>
+        </button>
+        <div class="user-avatar">JR</div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="dashboard-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Main</div>
+        <a href="dashboard.html" class="sidebar-link active">
+          <i class="fas fa-grid-2"></i> Dashboard
+        </a>
+        <a href="crop-planner.html" class="sidebar-link">
+          <i class="fas fa-calendar-days"></i> Crop Planner
+          <span class="sidebar-badge">3</span>
+        </a>
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-list-check"></i> My Tasks
+        </a>
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-chart-line"></i> Yield Analytics
+        </a>
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-shield-halved"></i> Risk Assessment
+        </a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Farm</div>
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-map-location-dot"></i> My Farms
+        </a>
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-cloud-sun"></i> Weather
+        </a>
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-leaf"></i> Crop Library
+        </a>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Account</div>
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-gear"></i> Settings
+        </a>
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-file-export"></i> Reports
+        </a>
+        <a href="#" class="sidebar-link">
+          <i class="fas fa-circle-question"></i> Help Center
+        </a>
+      </div>
+
+      <div class="sidebar-section" style="margin-top:auto;padding-top:1rem;border-top:1px solid var(--gray-light);">
+        <div style="padding:0 0.75rem;">
+          <div style="background:var(--primary-50);border-radius:var(--radius-lg);padding:1.25rem;text-align:center;">
+            <div style="font-size:1.5rem;margin-bottom:0.5rem;">🌽</div>
+            <h5 style="font-size:0.85rem;margin-bottom:0.25rem;">Upgrade to Pro</h5>
+            <p style="font-size:0.75rem;color:var(--gray);margin-bottom:0.75rem;">Unlock ML insights & risk alerts</p>
+            <a href="pricing.html" class="btn btn-primary btn-sm btn-full">Upgrade Now</a>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+      <!-- Header -->
+      <div class="dashboard-header">
+        <div>
+          <h2>Good morning, Juan! 👋</h2>
+          <p>Here's your farm overview for today, February 13, 2026</p>
+        </div>
+        <a href="crop-planner.html" class="btn btn-primary">
+          <i class="fas fa-plus"></i> New Crop Plan
+        </a>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:var(--primary-100);color:var(--primary);">
+            <i class="fas fa-wheat-awn"></i>
+          </div>
+          <div class="stat-content">
+            <h4>4.8 <span style="font-size:0.9rem;font-weight:500;">t/ha</span></h4>
+            <p>Estimated Yield</p>
+            <div class="stat-change up"><i class="fas fa-arrow-up"></i> 12% vs last season</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#dcfce7;color:#15803d;">
+            <i class="fas fa-tasks"></i>
+          </div>
+          <div class="stat-content">
+            <h4>18/24</h4>
+            <p>Tasks Completed</p>
+            <div class="stat-change up"><i class="fas fa-arrow-up"></i> 75% completion</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#fef3c7;color:#b45309;">
+            <i class="fas fa-shield-halved"></i>
+          </div>
+          <div class="stat-content">
+            <h4>Low</h4>
+            <p>Risk Level</p>
+            <div class="stat-change up"><i class="fas fa-arrow-down"></i> Improved</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#dbeafe;color:#1d4ed8;">
+            <i class="fas fa-calendar-check"></i>
+          </div>
+          <div class="stat-content">
+            <h4>Day 45</h4>
+            <p>Crop Cycle Progress</p>
+            <div class="stat-change" style="color:var(--accent);"><i class="fas fa-clock"></i> Vegetative stage</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Growth Stage Progress -->
+      <div class="dashboard-card mb-3">
+        <div class="dashboard-card-header">
+          <h4><i class="fas fa-seedling text-primary" style="margin-right:0.5rem;"></i>Corn Growth Stage Progress</h4>
+          <span class="badge badge-amber"><i class="fas fa-location-dot"></i> Vegetative Stage (V6-V10)</span>
+        </div>
+        <div class="stage-progress">
+          <div class="stage-bar completed" data-tooltip="Germination (Day 1-7)">Germ</div>
+          <div class="stage-bar completed" data-tooltip="Emergence (Day 7-14)">Emerg</div>
+          <div class="stage-bar completed" data-tooltip="Early Vegetative (Day 14-28)">V1-V5</div>
+          <div class="stage-bar current active" data-tooltip="Mid Vegetative (Day 28-50)">V6-V10</div>
+          <div class="stage-bar upcoming" data-tooltip="Late Vegetative (Day 50-65)">V11+</div>
+          <div class="stage-bar upcoming" data-tooltip="Tasseling (Day 65-72)">Tassel</div>
+          <div class="stage-bar upcoming" data-tooltip="Silking (Day 72-80)">Silk</div>
+          <div class="stage-bar upcoming" data-tooltip="Grain Fill (Day 80-110)">Fill</div>
+          <div class="stage-bar upcoming" data-tooltip="Maturity (Day 110-120)">Mat</div>
+          <div class="stage-bar upcoming" data-tooltip="Harvest (Day 120+)">Harv</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <span class="text-sm text-muted">Overall Progress</span>
+            <div class="progress-bar mt-1" style="width:300px;">
+              <div class="progress-bar-fill green" style="width:37.5%;"></div>
+            </div>
+          </div>
+          <span class="text-sm font-semibold">37.5% Complete — Day 45 of 120</span>
+        </div>
+      </div>
+
+      <!-- Main Dashboard Grid -->
+      <div class="dashboard-grid">
+        <!-- Left Column -->
+        <div>
+          <!-- Today's Tasks -->
+          <div class="dashboard-card mb-3">
+            <div class="dashboard-card-header">
+              <h4><i class="fas fa-list-check text-primary" style="margin-right:0.5rem;"></i>Today's Tasks</h4>
+              <a href="#" class="btn btn-sm btn-ghost">View All <i class="fas fa-arrow-right" style="font-size:0.7rem;"></i></a>
+            </div>
+
+            <div class="task-item completed" onclick="toggleTask(this)">
+              <div class="task-checkbox checked"><i class="fas fa-check"></i></div>
+              <div>
+                <div class="task-title">Apply side-dress nitrogen fertilizer (46-0-0)</div>
+                <div class="task-meta">
+                  <span><i class="fas fa-clock"></i> 6:00 AM</span>
+                  <span class="task-priority high">High</span>
+                  <span>Fertilization</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="task-item completed" onclick="toggleTask(this)">
+              <div class="task-checkbox checked"><i class="fas fa-check"></i></div>
+              <div>
+                <div class="task-title">Check and repair irrigation channels</div>
+                <div class="task-meta">
+                  <span><i class="fas fa-clock"></i> 7:30 AM</span>
+                  <span class="task-priority medium">Medium</span>
+                  <span>Irrigation</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="task-item" onclick="toggleTask(this)">
+              <div class="task-checkbox"></div>
+              <div>
+                <div class="task-title">Scout field for fall armyworm and corn borer</div>
+                <div class="task-meta">
+                  <span><i class="fas fa-clock"></i> 9:00 AM</span>
+                  <span class="task-priority high">High</span>
+                  <span>Pest Monitoring</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="task-item" onclick="toggleTask(this)">
+              <div class="task-checkbox"></div>
+              <div>
+                <div class="task-title">Monitor soil moisture level in field blocks A-C</div>
+                <div class="task-meta">
+                  <span><i class="fas fa-clock"></i> 10:30 AM</span>
+                  <span class="task-priority medium">Medium</span>
+                  <span>Soil Management</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="task-item" onclick="toggleTask(this)">
+              <div class="task-checkbox"></div>
+              <div>
+                <div class="task-title">Apply pre-emergence herbicide for weed control</div>
+                <div class="task-meta">
+                  <span><i class="fas fa-clock"></i> 2:00 PM</span>
+                  <span class="task-priority low">Low</span>
+                  <span>Weed Management</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="task-item" onclick="toggleTask(this)">
+              <div class="task-checkbox"></div>
+              <div>
+                <div class="task-title">Record plant height and leaf count observations</div>
+                <div class="task-meta">
+                  <span><i class="fas fa-clock"></i> 4:00 PM</span>
+                  <span class="task-priority low">Low</span>
+                  <span>Monitoring</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Yield Estimation Chart -->
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <h4><i class="fas fa-chart-line text-primary" style="margin-right:0.5rem;"></i>Yield Estimation Trend</h4>
+              <div style="display:flex;gap:0.5rem;">
+                <button class="btn btn-sm btn-ghost active" style="font-size:0.75rem;">This Cycle</button>
+                <button class="btn btn-sm btn-ghost" style="font-size:0.75rem;">Historical</button>
+              </div>
+            </div>
+            <div class="chart-container">
+              <canvas id="yieldChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div>
+          <!-- Risk Assessment -->
+          <div class="dashboard-card mb-3">
+            <div class="dashboard-card-header">
+              <h4><i class="fas fa-shield-halved" style="margin-right:0.5rem;color:var(--secondary);"></i>Risk Assessment</h4>
+            </div>
+            <div class="risk-gauge">
+              <div style="position:relative;width:140px;height:70px;overflow:hidden;margin-bottom:0.75rem;">
+                <div style="width:140px;height:140px;border-radius:50%;border:12px solid var(--gray-100);border-bottom-color:transparent;border-left-color:transparent;transform:rotate(225deg);position:relative;">
+                  <div style="position:absolute;inset:0;border-radius:50%;border:12px solid transparent;border-top-color:var(--primary);border-right-color:var(--primary);transform:rotate(0deg);"></div>
+                </div>
+              </div>
+              <div class="risk-value text-primary">Low</div>
+              <div class="risk-label">Production risk is manageable</div>
+            </div>
+
+            <div style="margin-top:1.25rem;">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-top:1px solid var(--gray-light);">
+                <span class="text-sm">Pest Risk</span>
+                <span class="badge badge-amber" style="font-size:0.7rem;">Medium</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-top:1px solid var(--gray-light);">
+                <span class="text-sm">Drought Risk</span>
+                <span class="badge badge-green" style="font-size:0.7rem;">Low</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-top:1px solid var(--gray-light);">
+                <span class="text-sm">Nutrient Deficiency</span>
+                <span class="badge badge-green" style="font-size:0.7rem;">Low</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-top:1px solid var(--gray-light);">
+                <span class="text-sm">Disease Risk</span>
+                <span class="badge badge-green" style="font-size:0.7rem;">Low</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Weather Forecast -->
+          <div class="dashboard-card mb-3">
+            <div class="dashboard-card-header">
+              <h4><i class="fas fa-cloud-sun" style="margin-right:0.5rem;color:var(--accent);"></i>Weather Forecast</h4>
+            </div>
+            <div style="text-align:center;padding:1rem 0;">
+              <i class="fas fa-cloud-sun" style="font-size:2.5rem;color:var(--secondary);"></i>
+              <div style="font-size:2rem;font-weight:800;margin:0.5rem 0;">32°C</div>
+              <div class="text-sm text-muted">Partly Cloudy — Isabela, Philippines</div>
+            </div>
+            <div class="weather-item">
+              <span class="weather-day">Tomorrow</span>
+              <i class="fas fa-sun weather-icon" style="color:var(--secondary);"></i>
+              <span class="weather-temp">34°C</span>
+            </div>
+            <div class="weather-item">
+              <span class="weather-day">Saturday</span>
+              <i class="fas fa-cloud-rain weather-icon" style="color:var(--accent);"></i>
+              <span class="weather-temp">28°C</span>
+            </div>
+            <div class="weather-item">
+              <span class="weather-day">Sunday</span>
+              <i class="fas fa-cloud-showers-heavy weather-icon" style="color:var(--dark-500);"></i>
+              <span class="weather-temp">26°C</span>
+            </div>
+            <div class="weather-item">
+              <span class="weather-day">Monday</span>
+              <i class="fas fa-cloud-sun weather-icon" style="color:var(--secondary);"></i>
+              <span class="weather-temp">30°C</span>
+            </div>
+          </div>
+
+          <!-- Recent Activity -->
+          <div class="dashboard-card">
+            <div class="dashboard-card-header">
+              <h4><i class="fas fa-bell" style="margin-right:0.5rem;color:var(--secondary);"></i>Notifications</h4>
+            </div>
+
+            <div class="notification-item">
+              <div class="notification-dot red"></div>
+              <div>
+                <div class="notification-text"><strong>Pest Alert:</strong> Fall armyworm risk elevated in your region. Inspect fields today.</div>
+                <div class="notification-time">2 hours ago</div>
+              </div>
+            </div>
+
+            <div class="notification-item">
+              <div class="notification-dot green"></div>
+              <div>
+                <div class="notification-text"><strong>Task Complete:</strong> Side-dress fertilizer application recorded successfully.</div>
+                <div class="notification-time">4 hours ago</div>
+              </div>
+            </div>
+
+            <div class="notification-item">
+              <div class="notification-dot blue"></div>
+              <div>
+                <div class="notification-text"><strong>Yield Update:</strong> Estimated yield improved to 4.8 t/ha based on current progress.</div>
+                <div class="notification-time">Yesterday</div>
+              </div>
+            </div>
+
+            <div class="notification-item">
+              <div class="notification-dot amber"></div>
+              <div>
+                <div class="notification-text"><strong>Weather:</strong> Rain expected Saturday-Sunday. Adjust irrigation accordingly.</div>
+                <div class="notification-time">Yesterday</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/main.js"></script>
+  <script>
+    // Toggle task completion
+    function toggleTask(el) {
+      el.classList.toggle('completed');
+      const checkbox = el.querySelector('.task-checkbox');
+      checkbox.classList.toggle('checked');
+      if (checkbox.classList.contains('checked')) {
+        checkbox.innerHTML = '<i class="fas fa-check"></i>';
+      } else {
+        checkbox.innerHTML = '';
+      }
+    }
+
+    // Sidebar toggle
+    document.getElementById('sidebarToggle').addEventListener('click', function() {
+      document.getElementById('sidebar').classList.toggle('open');
+    });
+
+    // Yield Chart
+    const ctx = document.getElementById('yieldChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7'],
+        datasets: [
+          {
+            label: 'Estimated Yield (t/ha)',
+            data: [3.2, 3.5, 3.8, 4.1, 4.4, 4.6, 4.8],
+            borderColor: '#16a34a',
+            backgroundColor: 'rgba(22, 163, 74, 0.08)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 4,
+            pointBackgroundColor: '#16a34a',
+            borderWidth: 2.5,
+          },
+          {
+            label: 'Target Yield (t/ha)',
+            data: [4.5, 4.5, 4.5, 4.5, 4.5, 4.5, 4.5],
+            borderColor: '#e2e8f0',
+            borderDash: [5, 5],
+            borderWidth: 2,
+            pointRadius: 0,
+            fill: false,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              usePointStyle: true,
+              pointStyle: 'circle',
+              font: { size: 11, family: 'Inter' },
+              padding: 20,
+            }
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: false,
+            min: 2.5,
+            max: 5.5,
+            grid: { color: '#f1f5f9' },
+            ticks: {
+              font: { size: 11, family: 'Inter' },
+              callback: function(value) { return value + ' t/ha'; }
+            }
+          },
+          x: {
+            grid: { display: false },
+            ticks: { font: { size: 11, family: 'Inter' } }
+          }
+        },
+        interaction: {
+          intersect: false,
+          mode: 'index',
+        }
+      }
+    });
+  </script>
+</body>
+</html>
